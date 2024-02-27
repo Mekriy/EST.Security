@@ -51,7 +51,20 @@ namespace ETS.Security.Services.Authentication
                 return Convert.ToBase64String(randomNumber);
             }
         }
-
+        public async Task<AuthenticatedUserResponse> GenerateTokens(User user)
+        {
+            user.RefreshToken = GenerateRefreshToken(user);
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                throw new Exception("Unable to create refresh token");
+            }
+            return new AuthenticatedUserResponse
+            {
+                AccessToken = await GenerateAccessToken(user),
+                RefreshToken = user.RefreshToken,
+            };
+        }
         public async Task<AuthenticatedUserResponse> RefreshAccessToken(string accessToken, string refreshToken)
         {
             var principal = GetPrincipalFromExpiredToken(accessToken);

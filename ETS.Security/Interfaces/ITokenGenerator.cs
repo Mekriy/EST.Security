@@ -9,5 +9,6 @@ namespace ETS.Security.Interfaces
         Task<string> GenerateAccessToken(User user);
         string GenerateRefreshToken(User user);
         Task<AuthenticatedUserResponse> RefreshAccessToken(string accessToken, string refreshToken);
+        Task<AuthenticatedUserResponse> GenerateTokens(User user);
     }
 }

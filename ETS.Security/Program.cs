@@ -1,14 +1,18 @@
 using ETS.Security.DataAccess;
+using ETS.Security.Interfaces;
+using ETS.Security.Models;
+using ETS.Security.Services;
+using ETS.Security.Services.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -16,6 +20,12 @@ builder.Services.AddDbContext<SecurityContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("db"));
 });
+
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddTransient<ITokenGenerator, TokenGenerator>();
+
+builder.Services.AddIdentity<User, IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<SecurityContext>();
 
 builder.Services.AddCors(options =>
 {
@@ -28,7 +38,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["JWT:Key"]));
+var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["JWT:SecretKey"]));
 var tokenValidationParams = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -44,6 +54,12 @@ var tokenValidationParams = new TokenValidationParameters
     IssuerSigningKey = key
 };
 
+
+//adding jwt authentication
+var authConfig = new AuthSettings();
+builder.Configuration.GetSection("JWT").Bind(authConfig);
+builder.Services.AddSingleton(authConfig);
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -57,10 +73,8 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = tokenValidationParams;
 });
 
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
