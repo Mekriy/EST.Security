@@ -1,4 +1,5 @@
-﻿using ETS.Security.Interfaces;
+﻿using ETS.Security.DTOs;
+using ETS.Security.Interfaces;
 using ETS.Security.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
@@ -28,7 +29,7 @@ namespace ETS.Security.Services.Authentication
 
             ClaimsIdentity identity = new ClaimsIdentity(new[] {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, roles.FirstOrDefault())
+                new Claim(ClaimTypes.Role, roles.FirstOrDefault(ClaimTypes.Role))
             });
 
             var securityToken = handler.CreateToken(new SecurityTokenDescriptor
@@ -65,11 +66,11 @@ namespace ETS.Security.Services.Authentication
                 RefreshToken = user.RefreshToken,
             };
         }
-        public async Task<AuthenticatedUserResponse> RefreshAccessToken(string accessToken, string refreshToken)
+        public async Task<AuthenticatedUserResponse> RefreshAccessToken(TokenRequest tokenRequest)
         {
-            var principal = GetPrincipalFromExpiredToken(accessToken);
-            var user = await _userManager.FindByNameAsync(principal.Identity.Name);
-            if (user == null || user.RefreshToken != refreshToken)
+            var principal = GetPrincipalFromExpiredToken(tokenRequest.Access);
+            var user = await _userManager.FindByIdAsync(principal.FindFirstValue(ClaimTypes.NameIdentifier));
+            if (user == null || user.RefreshToken != tokenRequest.Refresh)
             {
                 throw new SecurityTokenException("Invalid refresh token");
             }
