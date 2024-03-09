@@ -9,7 +9,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Text;
+using ETS.Security.DTOs;
 using ETS.Security.Helpers;
+using ETS.Security.Helpers.DTOValidations;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +22,10 @@ builder.Services.AddControllers(options =>
 {
     options.Filters.Add(typeof(CustomGlobalExceptionFilter));
 });
+builder.Services.AddValidatorsFromAssemblyContaining<UserLoginDTOValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UserRegisterDTOValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<EmailDTOValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ResetCodeDTOValidator>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Host.UseSerilog((context, configuration) =>

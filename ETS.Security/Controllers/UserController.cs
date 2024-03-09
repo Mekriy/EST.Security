@@ -1,8 +1,10 @@
-﻿using ETS.Security.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+using ETS.Security.DTOs;
 using ETS.Security.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using ETS.Security.Helpers;
 
 namespace ETS.Security.Controllers
 {
@@ -23,13 +25,18 @@ namespace ETS.Security.Controllers
         {
             var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
-                return Unauthorized("User is not authorized");
+                return Unauthorized("User is unauthorized");
 
             var user = await _userService.GetById(userId);
-            if (user == null)
-                return NotFound("No user found");
-            else
+            if (user != null)
                 return Ok(user);
+            else
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Can't get user",
+                    Detail = "Error occured while getting user from server"
+                };
         }
 
         [AllowAnonymous]
@@ -37,13 +44,23 @@ namespace ETS.Security.Controllers
         public async Task<IActionResult> GetUserById([FromRoute] Guid userId)
         {
             if (userId == Guid.Empty)
-                return BadRequest("No guid");
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Title = "Invalid guid",
+                    Detail = "Guid is empty"
+                };
 
             var user = await _userService.GetById(userId.ToString());
-            if (user == null)
-                return NotFound("No user found");
-            else
+            if (user != null)
                 return Ok(user);
+            else
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Can't get user",
+                    Detail = "Error occured while getting user from server"
+                };
         }
 
         [HttpPost("login")]
@@ -51,17 +68,16 @@ namespace ETS.Security.Controllers
         public async Task<IActionResult> Login([FromBody] UserLoginDTO userLogin)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                throw new ValidationException("Failed model validation");
 
-            if (!await _userService.IsUserExist(userLogin.Email))
-                return NotFound("No user exists");
-
-            if (!await _userService.CheckPasswords(userLogin.Email, userLogin.Password))
-                return BadRequest("Password doesn't match");
-
-            var token = await _userService.GenerateTokens(userLogin.Email);
+            var token = await _userService.Login(userLogin);
             if (token == null)
-                return StatusCode(500, "Error occured while creating token on server");
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Token generation",
+                    Detail = "Error occured while generating tokens for user"
+                };
             return Ok(token);
         }
 
@@ -69,23 +85,25 @@ namespace ETS.Security.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] UserRegisterDTO userRegister)
         {
-            try
-            {
-                //TODO: add validation to DTOs
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            //TODO: add validation to DTOs
+            if (!ModelState.IsValid)
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Title = "Not found",
+                    Detail = "User doesn't exist"
+                };
 
-                var user = await _userService.Create(userRegister);
-                if (user != null)
-                    return Created("/api/User", user);
-                else
-                    return StatusCode(500, "Error occured while creating user on server");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
+            var user = await _userService.Create(userRegister);
+            if (user != null)
+                return Created("/api/User", user);
+            else
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Token generation",
+                    Detail = "Error occured while creating user on server"
+                };
         }
 
         [AllowAnonymous]
@@ -94,7 +112,7 @@ namespace ETS.Security.Controllers
         {
             if (userId == string.Empty || code == string.Empty)
             {
-                return BadRequest("No user id or code");
+                throw new ValidationException("Invalid userId or code");
             }
 
             if (await _userService.VerifyEmail(userId, code))
@@ -108,7 +126,12 @@ namespace ETS.Security.Controllers
         {
             var result = await _userService.VerifyAndGenerateTokens(tokenRequest);
             if (result.AccessToken == null || result.RefreshToken == null)
-                return StatusCode(500, "Error occured while generating new tokens");
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Generating tokens",
+                    Detail = "Error occured while generating new tokens"
+                };
 
             return Ok(result);
         }
@@ -117,32 +140,50 @@ namespace ETS.Security.Controllers
         [HttpPost("resetcode")]
         public async Task<IActionResult> ResettingCodeEmail([FromBody] EmailDTO emailDTO)
         {
-            if (!await _userService.IsUserExist(emailDTO.To))
-                return BadRequest("Invalid email or user doesn't exist");
+            if (!await _userService.IsUserExists(emailDTO.To))
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Title = "User doesn't exist",
+                    Detail = "Invalid email or user doesn't exist"
+                };
 
             if (await _userService.SendResetCode(emailDTO.To))
             {
                 return Ok("Reset code has been sent!");
             }
             else
-                return StatusCode(500, "Error occured while sending reset code email");
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Sending reset code error",
+                    Detail = "Error occured while sending reset code email"
+                };
         }
 
         [AllowAnonymous]
         [HttpPost("verifyresetcode")]
         public async Task<IActionResult> VerifyingResetCode([FromBody] ResetCodeDTO resetCodeDTO)
         {
-            if (!await _userService.IsUserExist(resetCodeDTO.Email))
-                return BadRequest("Invalid email or user doesn't exist");
+            if (!await _userService.IsUserExists(resetCodeDTO.Email))
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Title = "User doesn't exist",
+                    Detail = "Invalid email or user doesn't exist"
+                };
 
             if (await _userService.VerifyResetCode(resetCodeDTO.Email, resetCodeDTO.ResetToken, resetCodeDTO.NewPassword))
             {
                 return Ok("Please login again");
             }
             else
-                return StatusCode(500, "Error occured while resetting password on service");
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Resetting code",
+                    Detail = "Error occured while resetting password on service"
+                };
         }
     }
 }
-
-//TODO: Create global exception handling

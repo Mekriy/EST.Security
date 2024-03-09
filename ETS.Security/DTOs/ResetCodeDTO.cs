@@ -1,4 +1,7 @@
-﻿namespace ETS.Security.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+using Org.BouncyCastle.Ocsp;
+
+namespace ETS.Security.DTOs
 {
     public class ResetCodeDTO
     {

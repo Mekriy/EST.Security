@@ -8,10 +8,10 @@ namespace ETS.Security.Interfaces
     {
         Task<UserDTO> GetById(string userId);
         Task<UserDTO> GetByEmail(string email);
-        Task<UserDTO> Create(UserRegisterDTO userDTO);
-        Task<bool> IsUserExist(string email);
+        Task<AuthenticatedUserResponse> Login(UserLoginDTO userLoginDto);
+        Task<UserDTO> Create(UserRegisterDTO userDto);
+        Task<bool> IsUserExists(string email);
         Task<bool> Delete(string email);
-        Task<bool> CheckPasswords(string email, string password);
 
         //email
         Task<bool> VerifyEmail(string userId, string code);

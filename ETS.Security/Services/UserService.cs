@@ -24,9 +24,9 @@ namespace ETS.Security.Services
         private readonly SecurityContext _context;
 
         public UserService(
-            UserManager<User> userManager, 
-            RoleManager<IdentityRole<Guid>> roleManager, 
-            ITokenGenerator tokenGenerator, 
+            UserManager<User> userManager,
+            RoleManager<IdentityRole<Guid>> roleManager,
+            ITokenGenerator tokenGenerator,
             SecurityContext context)
         {
             _userManager = userManager;
@@ -34,6 +34,7 @@ namespace ETS.Security.Services
             _tokenGenerator = tokenGenerator;
             _context = context;
         }
+
         public async Task<UserDTO> GetByEmail(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -46,6 +47,7 @@ namespace ETS.Security.Services
             };
             return userDTO;
         }
+
         public async Task<UserDTO> GetById(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -58,9 +60,10 @@ namespace ETS.Security.Services
             };
             return userDTO;
         }
-        public async Task<UserDTO> Create(UserRegisterDTO userDTO)
+
+        public async Task<AuthenticatedUserResponse> Login(UserLoginDTO userLoginDto)
         {
-            var isExist = await IsUserExist(userDTO.Email);
+            var isExist = await IsUserExists(userLoginDto.Email);
             if (isExist)
                 throw new ApiException()
                 {
@@ -68,7 +71,30 @@ namespace ETS.Security.Services
                     Title = "User doesn't exist",
                     Detail = "User doesn't exist while creating user"
                 };
+            var doesPasswordMatch = await CheckPasswords(userLoginDto);
+            if(!doesPasswordMatch)
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Title = "Wrong password",
+                    Detail = "Password doesn't match"
+                };
+            var tokens = await GenerateTokens(userLoginDto.Email);
             
+            return tokens;
+        }
+
+        public async Task<UserDTO> Create(UserRegisterDTO userDTO)
+        {
+            var isExist = await IsUserExists(userDTO.Email);
+            if (isExist)
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Title = "User doesn't exist",
+                    Detail = "User doesn't exist while creating user"
+                };
+
             var createUserResult = await CreateUser(userDTO);
             if (createUserResult)
             {
@@ -104,14 +130,14 @@ namespace ETS.Security.Services
             };
         }
 
-        private async Task<bool> CreateUser(UserRegisterDTO userDTO)
+        private async Task<bool> CreateUser(UserRegisterDTO userDto)
         {
             var user = new User()
             {
-                UserName = userDTO.UserName,
-                Email = userDTO.Email,
+                UserName = userDto.UserName,
+                Email = userDto.Email,
             };
-            var createResult = await _userManager.CreateAsync(user, userDTO.Password);
+            var createResult = await _userManager.CreateAsync(user, userDto.Password);
             return createResult.Succeeded;
         }
 
@@ -131,21 +157,25 @@ namespace ETS.Security.Services
                 Detail = "Error occured while adding role to user"
             };
         }
+
         public async Task<bool> Delete(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
             var result = await _userManager.DeleteAsync(user);
             return result.Succeeded;
         }
-        public async Task<bool> IsUserExist(string email)
+
+        public async Task<bool> IsUserExists(string email)
         {
             return await _context.Users.Where(u => u.Email == email).AnyAsync();
         }
-        public async Task<bool> CheckPasswords(string email, string password)
+
+        private async Task<bool> CheckPasswords(UserLoginDTO userLoginDto)
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            return await _userManager.CheckPasswordAsync(user, password);
+            var user = await _userManager.FindByEmailAsync(userLoginDto.Email);
+            return await _userManager.CheckPasswordAsync(user, userLoginDto.Password);
         }
+
         private async Task<bool> SendEmail(User user)
         {
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -250,7 +280,7 @@ namespace ETS.Security.Services
                 await smtp.DisconnectAsync(true);
                 return true;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 return false;
             }
@@ -259,34 +289,37 @@ namespace ETS.Security.Services
         private string CallbackUrl(Guid userId, string code)
         {
             var ngrok = ConstantVariables.ngrok;
-            var callbackUrl = ngrok + "/api/User/EmailConfirmation" + $"?userId={userId.ToString()}&code={code}";
+            var callbackUrl = ngrok + "/api/User/confirm" + $"?userId={userId.ToString()}&code={code}";
             return callbackUrl;
         }
 
         public async Task<bool> VerifyEmail(string userId, string code)
         {
-            //TODO: check if replace is usable
+            //TODO: check if replace is worth using
             code = code.Replace(' ', '+');
             var user = await _userManager.FindByIdAsync(userId);
             var result = await _userManager.ConfirmEmailAsync(user, code);
 
             return result.Succeeded;
         }
+
         public async Task<AuthenticatedUserResponse> VerifyAndGenerateTokens(TokenRequest tokenRequest)
         {
             return await _tokenGenerator.RefreshAccessToken(tokenRequest);
         }
+
         public async Task<AuthenticatedUserResponse> GenerateTokens(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
             return await _tokenGenerator.GenerateTokens(user);
         }
+
         public async Task<bool> SendResetCode(string emailDto)
         {
             var user = await _userManager.FindByEmailAsync(emailDto);
             var resetCode = await _userManager.GeneratePasswordResetTokenAsync(user);
             var ngrok = ConstantVariables.ngrok;
-            var callbackUrl = ngrok + "/api/User/VerifyResetCode" + $"?userId={user.Id}&code={resetCode}";
+            var callbackUrl = ngrok + "/api/User/resetcode" + $"?userId={user.Id}&code={resetCode}";
             try
             {
                 var email = new MimeMessage();
@@ -351,6 +384,7 @@ namespace ETS.Security.Services
                 return false;
             }
         }
+
         public async Task<bool> VerifyResetCode(string email, string code, string newPassword)
         {
             var user = await _userManager.FindByEmailAsync(email);
