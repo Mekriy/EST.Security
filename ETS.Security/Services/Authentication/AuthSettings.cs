@@ -9,7 +9,7 @@ namespace ETS.Security.Services.Authentication
         public double AccessTokenExpirationMinutes { get; set; }
         public string Issuer { get; set; }
         public string Audience { get; set; }
-        public double RefreshTokenExpirationMinutes { get; set; }
+        public int RefreshTokenExpirationDays { get; set; }
 
         public SecurityKey GetSecretKey()
         {

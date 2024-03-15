@@ -64,7 +64,7 @@ namespace ETS.Security.Services
         public async Task<AuthenticatedUserResponse> Login(UserLoginDTO userLoginDto)
         {
             var isExist = await IsUserExists(userLoginDto.Email);
-            if (isExist)
+            if (!isExist)
                 throw new ApiException()
                 {
                     StatusCode = StatusCodes.Status404NotFound,
