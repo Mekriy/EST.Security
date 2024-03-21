@@ -184,5 +184,29 @@ namespace ETS.Security.Controllers
                     Detail = "Error occured while resetting password on service"
                 };
         }
+        [Authorize]
+        [HttpDelete]
+        public async Task<IActionResult> DeleteUser()
+        {
+            var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Title = "No user",
+                    Detail = "Error user doesn't exist"
+                };
+
+            var user = await _userService.Delete(userId);
+            if (user)
+                return Ok("User is deleted");
+            else
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Can't get user",
+                    Detail = "Error occured while getting user from server"
+                };
+        }
     }
 }

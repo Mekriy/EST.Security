@@ -174,9 +174,9 @@ namespace ETS.Security.Services
             };
         }
 
-        public async Task<bool> Delete(string email)
+        public async Task<bool> Delete(string userId)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await _userManager.FindByIdAsync(userId);
             var result = await _userManager.DeleteAsync(user);
             return result.Succeeded;
         }
