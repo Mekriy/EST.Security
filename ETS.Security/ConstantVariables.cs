@@ -2,7 +2,7 @@
 {
     public class ConstantVariables
     {
-        public static string ngrok = "https://2b4e-45-87-90-51.ngrok-free.app";
+        public static string ngrok = "https://be62-178-212-241-227.ngrok-free.app";
         public static string htmlSuccessVerification = @"<!DOCTYPE html>
 <html>
 <head>

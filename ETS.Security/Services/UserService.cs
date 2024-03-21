@@ -71,6 +71,18 @@ namespace ETS.Security.Services
                     Title = "User doesn't exist",
                     Detail = "User doesn't exist while creating user"
                 };
+            var isEmailVerified = await this.isEmailVerified(userLoginDto.Email);
+            if (!isEmailVerified)
+            {
+                var user = await _userManager.FindByEmailAsync(userLoginDto.Email);
+                SendEmail(user);
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                    Title = "Email is not confirmed",
+                    Detail = "User email is not confirmed. Sent email again"
+                };
+            }
             var doesPasswordMatch = await CheckPasswords(userLoginDto);
             if(!doesPasswordMatch)
                 throw new ApiException()
@@ -84,6 +96,10 @@ namespace ETS.Security.Services
             return tokens;
         }
 
+        private async Task<bool> isEmailVerified(string email)
+        {
+            return (await _userManager.FindByEmailAsync(email)).EmailConfirmed;
+        }
         public async Task<UserDTO> Create(UserRegisterDTO userDTO)
         {
             var isExist = await IsUserExists(userDTO.Email);
@@ -129,7 +145,7 @@ namespace ETS.Security.Services
                 Detail = "Error occured while creating user on server"
             };
         }
-
+    
         private async Task<bool> CreateUser(UserRegisterDTO userDto)
         {
             var user = new User()

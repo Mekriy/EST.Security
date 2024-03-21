@@ -85,7 +85,6 @@ namespace ETS.Security.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] UserRegisterDTO userRegister)
         {
-            //TODO: add validation to DTOs
             if (!ModelState.IsValid)
                 throw new ApiException()
                 {
