@@ -32,8 +32,9 @@ namespace ETS.Security.Services.Authentication
             var key = Encoding.ASCII.GetBytes(_authSettings.SecretKey);
             var roles = await _userManager.GetRolesAsync(user);
 
-            ClaimsIdentity identity = new ClaimsIdentity(new[] {
+            var identity = new ClaimsIdentity(new[] {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, roles.FirstOrDefault(ClaimTypes.Role))
             });
 
