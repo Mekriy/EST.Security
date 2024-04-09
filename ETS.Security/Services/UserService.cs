@@ -78,9 +78,9 @@ namespace ETS.Security.Services
                 SendEmail(user);
                 throw new ApiException()
                 {
-                    StatusCode = StatusCodes.Status401Unauthorized,
+                    StatusCode = StatusCodes.Status400BadRequest,
                     Title = "Email is not confirmed",
-                    Detail = "User email is not confirmed. Sent email again"
+                    Detail = "User email is not confirmed. Email was sent again"
                 };
             }
             var doesPasswordMatch = await CheckPasswords(userLoginDto);
@@ -100,15 +100,15 @@ namespace ETS.Security.Services
         {
             return (await _userManager.FindByEmailAsync(email)).EmailConfirmed;
         }
-        public async Task<UserDTO> Create(UserRegisterDTO userDTO)
+        public async Task<bool> Create(UserRegisterDTO userDTO)
         {
             var isExist = await IsUserExists(userDTO.Email);
             if (isExist)
                 throw new ApiException()
                 {
-                    StatusCode = StatusCodes.Status404NotFound,
-                    Title = "User doesn't exist",
-                    Detail = "User doesn't exist while creating user"
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Title = "Invalid email",
+                    Detail = "Email is already used! Try different one"
                 };
 
             var createUserResult = await CreateUser(userDTO);
@@ -119,12 +119,7 @@ namespace ETS.Security.Services
                 var isEmailSent = await SendEmail(createdUser);
                 if (isEmailSent)
                 {
-                    return new UserDTO()
-                    {
-                        UserName = createdUser.UserName,
-                        Email = createdUser.Email,
-                        RoleName = userRole
-                    };
+                    return isEmailSent;
                 }
                 else
                 {

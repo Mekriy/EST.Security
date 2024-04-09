@@ -38,7 +38,7 @@ namespace EST.Tests.UserControllerTests
                 Email = "TestEmail@gmail.com",
                 Password = "testpassword123!S"
             };
-            _mockUserService.Setup(x => x.Create(It.IsAny<UserRegisterDTO>())).ReturnsAsync(new UserDTO());
+            _mockUserService.Setup(x => x.Create(It.IsAny<UserRegisterDTO>())).ReturnsAsync(true);
 
             // Act
             var result = await _userController.Register(userDto);

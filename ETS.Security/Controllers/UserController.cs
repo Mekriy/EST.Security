@@ -63,6 +63,21 @@ namespace ETS.Security.Controllers
                 };
         }
 
+        [AllowAnonymous]
+        [HttpGet("{email}")]
+        public async Task<IActionResult> EmailUsed([FromRoute] string email)
+        {
+            var response = await _userService.IsUserExists(email);
+            if (!response)
+                throw new ApiException()
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Title = "Email is not used",
+                    Detail = "Email is not used, user with this email doesn't exist"
+                };
+            return Ok();
+        }
+
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] UserLoginDTO userLogin)
@@ -86,21 +101,16 @@ namespace ETS.Security.Controllers
         public async Task<IActionResult> Register([FromBody] UserRegisterDTO userRegister)
         {
             if (!ModelState.IsValid)
-                throw new ApiException()
-                {
-                    StatusCode = StatusCodes.Status404NotFound,
-                    Title = "Not found",
-                    Detail = "User doesn't exist"
-                };
+                throw new ValidationException("Failed model validation");
 
             var user = await _userService.Create(userRegister);
-            if (user != null)
-                return Created("/api/User", user);
+            if (user)
+                return Ok();
             else
                 throw new ApiException()
                 {
                     StatusCode = StatusCodes.Status500InternalServerError,
-                    Title = "Token generation",
+                    Title = "User creation",
                     Detail = "Error occured while creating user on server"
                 };
         }
@@ -115,9 +125,9 @@ namespace ETS.Security.Controllers
             }
 
             if (await _userService.VerifyEmail(userId, code))
-                return Content(ConstantVariables.htmlSuccessVerification, "text/html");
+                return Redirect("http://localhost:4200/verification-success");
             else
-                return Content(ConstantVariables.htmlFailVerification, "text/html");
+                return Redirect("http://localhost:4200/verification-failure");
         }
 
         [HttpPost("tokens")]
