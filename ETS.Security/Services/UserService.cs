@@ -329,8 +329,7 @@ namespace ETS.Security.Services
         {
             var user = await _userManager.FindByEmailAsync(emailDto);
             var resetCode = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var ngrok = ConstantVariables.ngrok;
-            var callbackUrl = ngrok + "/api/User/resetcode" + $"?userId={user.Id}&code={resetCode}";
+            var callbackUrl = "http://localhost:4200/" + "verified-password-reset" + $"?userEmail={user.Email}&code={resetCode}";
             try
             {
                 var email = new MimeMessage();
@@ -359,8 +358,8 @@ namespace ETS.Security.Services
     <tr>
       <td>
         <h2>Password Reset</h2>
-        <p>We have received a request to reset your password. Below is your 6-digit verification code.</p>
-        <p>Please enter this code in the provided field:</p>
+        <p>We have received a request to reset your password. Please follow the link to the page</p>
+        <p>On this page you can type your new password:</p>
       </td>
     </tr>
     <tr>
@@ -398,6 +397,7 @@ namespace ETS.Security.Services
 
         public async Task<bool> VerifyResetCode(string email, string code, string newPassword)
         {
+            code = code.Replace(' ', '+');
             var user = await _userManager.FindByEmailAsync(email);
             var result = await _userManager.ResetPasswordAsync(user, code, newPassword);
             if (result.Succeeded)

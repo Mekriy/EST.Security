@@ -72,8 +72,8 @@ namespace ETS.Security.Services.Authentication
             }
             return new AuthenticatedUserResponse
             {
-                AccessToken = await GenerateAccessToken(user),
-                RefreshToken = user.RefreshToken,
+                Access = await GenerateAccessToken(user),
+                Refresh = user.RefreshToken,
             };
         }
         public async Task<AuthenticatedUserResponse> RefreshAccessToken(TokenRequest tokenRequest)
@@ -101,8 +101,8 @@ namespace ETS.Security.Services.Authentication
 
             return new AuthenticatedUserResponse
             {
-                AccessToken = await GenerateAccessToken(user),
-                RefreshToken = user.RefreshToken
+                Access = await GenerateAccessToken(user),
+                Refresh = user.RefreshToken
             };
         }
         private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)

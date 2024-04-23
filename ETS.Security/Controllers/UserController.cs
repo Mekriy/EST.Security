@@ -134,7 +134,7 @@ namespace ETS.Security.Controllers
         public async Task<IActionResult> RefreshingTokens([FromBody] TokenRequest tokenRequest)
         {
             var result = await _userService.VerifyAndGenerateTokens(tokenRequest);
-            if (result.AccessToken == null || result.RefreshToken == null)
+            if (result.Access == null || result.Refresh == null)
                 throw new ApiException()
                 {
                     StatusCode = StatusCodes.Status500InternalServerError,
@@ -146,7 +146,7 @@ namespace ETS.Security.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("resetcode")]
+        [HttpPost("reset")]
         public async Task<IActionResult> ResettingCodeEmail([FromBody] EmailDTO emailDTO)
         {
             if (!await _userService.IsUserExists(emailDTO.To))
@@ -159,7 +159,7 @@ namespace ETS.Security.Controllers
 
             if (await _userService.SendResetCode(emailDTO.To))
             {
-                return Ok("Reset code has been sent!");
+                return NoContent();
             }
             else
                 throw new ApiException()
@@ -171,7 +171,7 @@ namespace ETS.Security.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("verifyresetcode")]
+        [HttpPatch("verify-reset-code")]
         public async Task<IActionResult> VerifyingResetCode([FromBody] ResetCodeDTO resetCodeDTO)
         {
             if (!await _userService.IsUserExists(resetCodeDTO.Email))
@@ -184,7 +184,7 @@ namespace ETS.Security.Controllers
 
             if (await _userService.VerifyResetCode(resetCodeDTO.Email, resetCodeDTO.ResetToken, resetCodeDTO.NewPassword))
             {
-                return Ok("Please login again");
+                return NoContent();
             }
             else
                 throw new ApiException()
