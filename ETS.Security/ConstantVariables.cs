@@ -2,6 +2,6 @@
 {
     public class ConstantVariables
     {
-        public static string ngrok = "https://4297-178-212-241-227.ngrok-free.app";
+        public static string ngrok = "https://5b06-93-171-247-144.ngrok-free.app";
     }
 }

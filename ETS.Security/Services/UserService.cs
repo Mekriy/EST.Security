@@ -4,14 +4,12 @@ using ETS.Security.Helpers;
 using ETS.Security.Interfaces;
 using ETS.Security.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using MimeKit;
 using MimeKit.Text;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using ETS.Security.Services.Authentication;
 using Microsoft.EntityFrameworkCore;
-using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 using Exception = System.Exception;
 
 namespace ETS.Security.Services
@@ -34,20 +32,6 @@ namespace ETS.Security.Services
             _tokenGenerator = tokenGenerator;
             _context = context;
         }
-
-        public async Task<UserDTO> GetByEmail(string email)
-        {
-            var user = await _userManager.FindByEmailAsync(email);
-            var userRole = await _userManager.GetRolesAsync(user);
-            var userDTO = new UserDTO()
-            {
-                UserName = user.UserName,
-                Email = user.Email,
-                RoleName = userRole.FirstOrDefault()
-            };
-            return userDTO;
-        }
-
         public async Task<UserDTO> GetById(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -306,11 +290,9 @@ namespace ETS.Security.Services
 
         public async Task<bool> VerifyEmail(string userId, string code)
         {
-            //TODO: check if replace is worth using
             code = code.Replace(' ', '+');
             var user = await _userManager.FindByIdAsync(userId);
             var result = await _userManager.ConfirmEmailAsync(user, code);
-
             return result.Succeeded;
         }
 

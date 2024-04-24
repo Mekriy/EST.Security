@@ -30,13 +30,12 @@ namespace ETS.Security.Controllers
             var user = await _userService.GetById(userId);
             if (user != null)
                 return Ok(user);
-            else
-                throw new ApiException()
-                {
-                    StatusCode = StatusCodes.Status500InternalServerError,
-                    Title = "Can't get user",
-                    Detail = "Error occured while getting user from server"
-                };
+            throw new ApiException()
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Title = "Can't get user",
+                Detail = "Error occured while getting user from server"
+            };
         }
 
         [AllowAnonymous]
@@ -54,13 +53,12 @@ namespace ETS.Security.Controllers
             var user = await _userService.GetById(userId.ToString());
             if (user != null)
                 return Ok(user);
-            else
-                throw new ApiException()
-                {
-                    StatusCode = StatusCodes.Status500InternalServerError,
-                    Title = "Can't get user",
-                    Detail = "Error occured while getting user from server"
-                };
+            throw new ApiException()
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Title = "Can't get user",
+                Detail = "Error occured while getting user from server"
+            };
         }
 
         [AllowAnonymous]
@@ -141,7 +139,6 @@ namespace ETS.Security.Controllers
                     Title = "Generating tokens",
                     Detail = "Error occured while generating new tokens"
                 };
-
             return Ok(result);
         }
 
@@ -161,13 +158,12 @@ namespace ETS.Security.Controllers
             {
                 return NoContent();
             }
-            else
-                throw new ApiException()
-                {
-                    StatusCode = StatusCodes.Status500InternalServerError,
-                    Title = "Sending reset code error",
-                    Detail = "Error occured while sending reset code email"
-                };
+            throw new ApiException()
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Title = "Sending reset code error",
+                Detail = "Error occured while sending reset code email"
+            };
         }
 
         [AllowAnonymous]
@@ -209,14 +205,13 @@ namespace ETS.Security.Controllers
 
             var user = await _userService.Delete(userId);
             if (user)
-                return Ok("User is deleted");
-            else
-                throw new ApiException()
-                {
-                    StatusCode = StatusCodes.Status500InternalServerError,
-                    Title = "Can't get user",
-                    Detail = "Error occured while getting user from server"
-                };
+                return NoContent();
+            throw new ApiException()
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Title = "Can't get user",
+                Detail = "Error occured while getting user from server"
+            };
         }
     }
 }

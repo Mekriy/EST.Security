@@ -7,7 +7,6 @@ namespace ETS.Security.Interfaces
     public interface IUserService
     {
         Task<UserDTO> GetById(string userId);
-        Task<UserDTO> GetByEmail(string email);
         Task<AuthenticatedUserResponse> Login(UserLoginDTO userLoginDto);
         Task<bool> Create(UserRegisterDTO userDto);
         Task<bool> IsUserExists(string email);
