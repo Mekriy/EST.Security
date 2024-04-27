@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34221.43
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETS.Security", "ETS.Security\ETS.Security.csproj", "{0FB2B19C-312B-41A9-85AC-5380C0743F30}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETS.Security", "ETS.Security\ETS.Security.csproj", "{0FB2B19C-312B-41A9-85AC-5380C0743F30}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EST.Tests", "EST.Tests\EST.Tests.csproj", "{CD44C495-B4C9-4685-BAC6-7BFFED279405}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{0FB2B19C-312B-41A9-85AC-5380C0743F30}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FB2B19C-312B-41A9-85AC-5380C0743F30}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0FB2B19C-312B-41A9-85AC-5380C0743F30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD44C495-B4C9-4685-BAC6-7BFFED279405}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD44C495-B4C9-4685-BAC6-7BFFED279405}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD44C495-B4C9-4685-BAC6-7BFFED279405}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD44C495-B4C9-4685-BAC6-7BFFED279405}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

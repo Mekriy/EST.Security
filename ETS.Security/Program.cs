@@ -1,21 +1,47 @@
 using ETS.Security.DataAccess;
+using ETS.Security.Interfaces;
+using ETS.Security.Models;
+using ETS.Security.Services;
+using ETS.Security.Services.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Text;
+using ETS.Security.DTOs;
+using ETS.Security.Helpers;
+using ETS.Security.Helpers.DTOValidations;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(typeof(CustomGlobalExceptionFilter));
+});
+builder.Services.AddValidatorsFromAssemblyContaining<UserLoginDTOValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UserRegisterDTOValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<EmailDTOValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ResetCodeDTOValidator>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration));
 
 builder.Services.AddDbContext<SecurityContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("db"));
 });
+
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddTransient<ITokenGenerator, TokenGenerator>();
+
+builder.Services.AddIdentity<User, IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<SecurityContext>()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddCors(options =>
 {
@@ -28,7 +54,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["JWT:Key"]));
+var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["JWT:SecretKey"]));
 var tokenValidationParams = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -44,6 +70,12 @@ var tokenValidationParams = new TokenValidationParameters
     IssuerSigningKey = key
 };
 
+
+//adding jwt authentication
+var authConfig = new AuthSettings();
+builder.Configuration.GetSection("JWT").Bind(authConfig);
+builder.Services.AddSingleton(authConfig);
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -57,16 +89,21 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = tokenValidationParams;
 });
 
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseExceptionHandler("/Error");
+}
 
+app.UseStaticFiles();
+
+app.UseSerilogRequestLogging();
 app.UseRouting();
 app.UseCors("AllowMyOrigins");
 app.UseHttpsRedirection();
@@ -75,5 +112,17 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+    var roles = new[] { "Admin", "User" };
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole<Guid>(role));
+    }
+}
 
 app.Run();

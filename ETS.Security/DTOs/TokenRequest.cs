@@ -1,6 +1,6 @@
-﻿namespace ETS.Security.Services.Authentication
+﻿namespace ETS.Security.DTOs
 {
-    public class AuthenticatedUserResponse
+    public class TokenRequest
     {
         public string Access { get; set; }
         public string Refresh { get; set; }
