@@ -17,18 +17,15 @@ namespace ETS.Security.Services
     public class UserService : IUserService
     {
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ITokenGenerator _tokenGenerator;
         private readonly SecurityContext _context;
 
         public UserService(
             UserManager<User> userManager,
-            RoleManager<IdentityRole<Guid>> roleManager,
             ITokenGenerator tokenGenerator,
             SecurityContext context)
         {
             _userManager = userManager;
-            _roleManager = roleManager;
             _tokenGenerator = tokenGenerator;
             _context = context;
         }
@@ -36,11 +33,11 @@ namespace ETS.Security.Services
         {
             var user = await _userManager.FindByIdAsync(userId);
             var userRole = await _userManager.GetRolesAsync(user);
-            var userDTO = new UserDTO()
+            var userDTO = new UserDTO
             {
                 UserName = user.UserName,
                 Email = user.Email,
-                RoleName = userRole.FirstOrDefault()
+                RoleName = userRole.FirstOrDefault() ?? string.Empty
             };
             return userDTO;
         }
@@ -55,12 +52,14 @@ namespace ETS.Security.Services
                     Title = "User doesn't exist",
                     Detail = "User doesn't exist while creating user"
                 };
-            var isEmailVerified = await this.isEmailVerified(userLoginDto.Email);
+            
+            var isEmailVerified = await IsEmailVerified(userLoginDto.Email);
             if (!isEmailVerified)
             {
                 var user = await _userManager.FindByEmailAsync(userLoginDto.Email);
-                SendEmail(user);
-                throw new ApiException()
+                //TODO: this will send mails everytime user is doing the login. In a real project you would be probably checking to be sure that you do not send emails more than once per day etc.
+                await SendEmail(user); 
+                throw new ApiException
                 {
                     StatusCode = StatusCodes.Status400BadRequest,
                     Title = "Email is not confirmed",
@@ -80,7 +79,7 @@ namespace ETS.Security.Services
             return tokens;
         }
 
-        private async Task<bool> isEmailVerified(string email)
+        private async Task<bool> IsEmailVerified(string email)
         {
             return (await _userManager.FindByEmailAsync(email)).EmailConfirmed;
         }
@@ -99,7 +98,7 @@ namespace ETS.Security.Services
             if (createUserResult)
             {
                 var createdUser = await _userManager.FindByEmailAsync(userDTO.Email);
-                var userRole = await AddRoleToUser(createdUser);
+                await AddRoleToUser(createdUser);
                 var isEmailSent = await SendEmail(createdUser);
                 if (isEmailSent)
                 {
@@ -162,7 +161,7 @@ namespace ETS.Security.Services
 
         public async Task<bool> IsUserExists(string email)
         {
-            return await _context.Users.Where(u => u.Email == email).AnyAsync();
+            return await _context.Users.Where(u => u.Email.ToLower() == email.ToLower()).AnyAsync();
         }
 
         private async Task<bool> CheckPasswords(UserLoginDTO userLoginDto)
@@ -174,7 +173,7 @@ namespace ETS.Security.Services
         private async Task<bool> SendEmail(User user)
         {
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var callback_url = CallbackUrl(user.Id, code);
+            var callbackUrl = CallbackUrl(user.Id, code);
 
             try
             {
@@ -249,14 +248,14 @@ namespace ETS.Security.Services
     <tr>
       <td style=""text-align: center;"">
         <div class=""button-container"">
-          <a class=""verify-button"" href=""{callback_url}"">Verify Email</a>
+          <a class=""verify-button"" href=""{callbackUrl}"">Verify Email</a>
         </div>
       </td>
     </tr>
     <tr>
       <td>
         <p class=""email-text"">If button doesn't work follow this link: </p>
-        <p class=""email-text"">{callback_url}</p>
+        <p class=""email-text"">{callbackUrl}</p>
         <p class=""email-text"" style=""margin-top: 20px;"">If you didn't sign up for this service, please ignore this email.</p>
         <p class=""email-text"">Best regards,</p>
         <p class=""email-text"">Spendify</p>

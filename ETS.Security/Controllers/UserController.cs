@@ -28,6 +28,8 @@ namespace ETS.Security.Controllers
                 return Unauthorized("User is unauthorized");
 
             var user = await _userService.GetById(userId);
+            //TODO: user cannot be null here, please take a look to _userService.GetById implementation
+            //TODO: same applicable below
             if (user != null)
                 return Ok(user);
             throw new ApiException()
@@ -122,6 +124,8 @@ namespace ETS.Security.Controllers
                 throw new ValidationException("Invalid userId or code");
             }
 
+            //TODO: identity server should not be aware about the frontend location, as there can be many websites using it
+            //TODO: instead redirect URL should come to this endpoint as a parameter
             if (await _userService.VerifyEmail(userId, code))
                 return Redirect("http://localhost:4200/verification-success");
             else
